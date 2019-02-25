@@ -7,18 +7,28 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <pthread.h>
 
 #define SERVER_PORT 7000
 #define OPTIONS "?s:p:i:l:t:"
+
+void* clientThread(void* threadArg);
+void* generateMessage(unsigned messageLength);
+
+
+struct sockaddr_in server;
+unsigned iteration;
+char* message;
 
 int main(int argc, char** argv)
 {
     char* host;
     int opt;
     unsigned short portNumber;
-    unsigned iteration, messageLength, processCount;
-    struct sockaddr_in server;
+    unsigned messageLength = 16, threadCount = 5;
     struct hostent* hp;
+    pthread_t* threadList;
+    iteration = 5;
 
     while((opt = getopt(argc, argv, OPTIONS)) != -1 )
     {
@@ -41,7 +51,7 @@ int main(int argc, char** argv)
                 break;
 
             case 't':
-                processCount = atoi(optarg);
+                threadCount = atoi(optarg);
                 break;
         }
     }
@@ -56,6 +66,28 @@ int main(int argc, char** argv)
     }
     memcpy(&server.sin_addr, hp->h_addr, hp->h_length);
 
-    
+    threadList = malloc(sizeof(pthread_t) * threadCount );
+    for(int i = 0; i < threadCount; ++i)
+    {
+        pthread_create(&threadList[i], NULL, clientThread, NULL);
+    }
+
+    for(int i = 0; i < threadCount; ++i)
+    {
+        pthread_join(threadList[i], NULL);
+    }
+    free(threadList);
+    return 0;
+}
+
+void* clientThread(void* threadArg)
+{
+    FILE* threadFile;
+    char fileName[32];
+    pthread_t id = pthread_self();
+    sprintf(fileName, "Thread%lu.txt", (unsigned long)id);
+    threadFile = fopen(fileName, "w");
+    fprintf(threadFile,"testing\n");
+    fclose(threadFile);
     return 0;
 }
