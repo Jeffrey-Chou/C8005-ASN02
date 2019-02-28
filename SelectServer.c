@@ -7,7 +7,7 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <semaphore.h>
-
+#include <sys/ioctl.h>
 
 
 #define PORT 7000
@@ -22,10 +22,11 @@ typedef struct threadList
 
 int main(int argc, char** argv)
 {
-    int listen_sd, sd, clients[FD_SETSIZE],max_fd, nready;
+    int listen_sd, sd, clients[FD_SETSIZE],max_fd, nready, bytesToRead;
     socklen_t clientLen;
     struct sockaddr_in server, clientDetails;
     fd_set rset, allset;
+    char buffer[128], *bp;
 
     if((listen_sd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
@@ -89,7 +90,56 @@ int main(int argc, char** argv)
             {
                 continue;
             }
-        
+        }
+
+        for(int i = 0; i < FD_SETSIZE; ++i)
+        {
+            if((sd = clients[i]) < 0)
+            {
+                continue;
+            }
+
+            if(FD_ISSET(sd, &rset))
+            {
+                ssize_t n;
+                unsigned messageLength = 0;
+                bp = (char *)&messageLength;
+                ioctl(sd, FIONREAD, &n);
+                if(n == 0)
+                {
+                    printf(" Remote Address:  %s:%d closed connection\n", inet_ntoa(clientDetails.sin_addr), ntohs(clientDetails.sin_port));
+					close(sd);
+                    FD_CLR(sd, &allset);
+                    clients[i] = -1;
+
+                }
+                else
+                {
+                    bytesToRead = sizeof(messageLength);
+                    while( (n = read(sd, bp, bytesToRead)) > 0)
+                    {
+                        bp += n;
+                        bytesToRead -= n;
+                    }
+                    bytesToRead = ntohl(messageLength);
+                    messageLength = bytesToRead;
+                    printf("message length is %u\n", bytesToRead);
+                    bp = buffer;
+                    while((n = read(sd, bp, bytesToRead)) > 0)
+                    {
+                        bp += n;
+                        bytesToRead -= n;
+                    }
+                    printf("received:\n%s\n", buffer);
+                    write(sd, buffer, messageLength);
+                
+                }
+                if (--nready <= 0)
+                {
+                    break;
+                }
+            }
+
         }
 
         
