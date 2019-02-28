@@ -58,7 +58,7 @@ int main(int argc, char** argv)
         }
     }
     generateMessage();
-    memset(&server, sizeof(struct sockaddr_in), 0);
+    memset(&server, 0, sizeof(struct sockaddr_in));
     server.sin_family = AF_INET;
     server.sin_port = htons(SERVER_PORT);
     if((hp = gethostbyname(host)) == NULL)
@@ -121,6 +121,8 @@ void* clientThread(void* threadArg)
     {
         int n = 0, bytesLeft = messageLength;
         char* bp = buffer;
+        unsigned length = htonl(messageLength);
+        send(sd, &length, sizeof(length), 0);
         send(sd, message, messageLength, 0);
         gettimeofday(&start, NULL);
         while((n = recv(sd,bp,bytesLeft, 0 )) < messageLength)
