@@ -8,25 +8,41 @@
 #include <unistd.h>
 #include <semaphore.h>
 #include <sys/ioctl.h>
+#include <pthread.h>
 
 
 #define PORT 7000
 #define TASK_COUNT 5
+#define BUFFER_LENGTH 256
 
-typedef struct threadList
+typedef struct ThreadLock
 {
-    int sock;
+    int sd;
     sem_t sem;
 
-} threadList;
+} ThreadLock;
+
+ThreadLock* masterList;
+
+void* serverThread(void* arg);
 
 int main(int argc, char** argv)
 {
-    int listen_sd, sd, clients[FD_SETSIZE],max_fd, nready, bytesToRead;
+    int listen_sd, sd, clients[FD_SETSIZE],max_fd, nready;
     socklen_t clientLen;
     struct sockaddr_in server, clientDetails;
     fd_set rset, allset;
-    char buffer[128], *bp;
+    char *bp;
+
+    masterList = malloc(sizeof(ThreadLock) * TASK_COUNT);
+    for(int i = 0; i < TASK_COUNT; ++i)
+    {
+        pthread_t thread;
+        masterList[i].sd = -1;
+        sem_init(&masterList[i].sem, 0, 0);
+        pthread_create(&thread, NULL, serverThread, &masterList[i]);
+    }
+
 
     if((listen_sd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
@@ -115,6 +131,7 @@ int main(int argc, char** argv)
                 }
                 else
                 {
+                    /*
                     bytesToRead = sizeof(messageLength);
                     while( (n = read(sd, bp, bytesToRead)) > 0)
                     {
@@ -132,6 +149,17 @@ int main(int argc, char** argv)
                     }
                     printf("received:\n%s\n", buffer);
                     write(sd, buffer, messageLength);
+                    */
+                   for(int i = 0; i < TASK_COUNT; ++i)
+                   {
+                       if(masterList[i].sd != -1)
+                       {
+                           continue;
+                       }
+                       masterList[i].sd = sd;
+                       sem_post(&masterList[i].sem);
+
+                   }
                 
                 }
                 if (--nready <= 0)
@@ -145,4 +173,36 @@ int main(int argc, char** argv)
         
     }
     return 0;
+}
+
+void* serverThread(void* arg)
+{
+    ThreadLock* lock = (ThreadLock*) arg;
+    char buffer[BUFFER_LENGTH], *bp;
+    int bytesToRead;
+    ssize_t n;
+    while(1)
+    {
+        sem_wait(&lock->sem);
+        unsigned messageLength = 0;
+        bp = (char *)&messageLength;
+        bytesToRead = sizeof(messageLength);
+        while( (n = read(lock->sd, bp, bytesToRead)) > 0)
+        {
+            bp += n;
+            bytesToRead -= n;
+        }
+        bytesToRead = ntohl(messageLength);
+        messageLength = bytesToRead;
+        printf("message length is %u\n", bytesToRead);
+        bp = buffer;
+        while((n = read(lock->sd, bp, bytesToRead)) > 0)
+        {
+            bp += n;
+            bytesToRead -= n;
+        }
+        printf("received:\n%s\n", buffer);
+        write(lock->sd, buffer, messageLength);
+        lock->sd = -1;
+    }
 }
