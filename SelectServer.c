@@ -3,7 +3,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <stdlib.h>
-#include <strings.h>
+#include <string.h>
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <semaphore.h>
@@ -23,6 +23,8 @@ typedef struct ThreadLock
 } ThreadLock;
 
 ThreadLock* masterList;
+fd_set allset;
+sem_t allset_lock;
 
 void* serverThread(void* arg);
 
@@ -31,9 +33,12 @@ int main(int argc, char** argv)
     int listen_sd, sd, clients[FD_SETSIZE],max_fd, nready;
     socklen_t clientLen;
     struct sockaddr_in server, clientDetails;
-    fd_set rset, allset;
+    fd_set rset;
     char *bp;
-
+    struct timeval timeout;
+    timeout.tv_sec = 5;
+    timeout.tv_usec = 0;
+    sem_init(&allset_lock, 0, 1);
     masterList = malloc(sizeof(ThreadLock) * TASK_COUNT);
     for(int i = 0; i < TASK_COUNT; ++i)
     {
@@ -75,8 +80,15 @@ int main(int argc, char** argv)
     FD_SET(listen_sd, &allset);
     while(1)
     {
+        sem_wait(&allset_lock);
         rset = allset;
-        nready = select(max_fd + 1, &rset, NULL, NULL, NULL);
+        sem_post(&allset_lock);
+        nready = select(max_fd + 1, &rset, NULL, NULL, &timeout);
+
+        if(nready == 0)
+        {
+            continue;
+        }
 
         if (FD_ISSET(listen_sd, &rset))
         {
@@ -93,7 +105,9 @@ int main(int argc, char** argv)
                 if(clients[i] < 0)
                 {
                     clients[i] = sd;
+                    sem_wait(&allset_lock);
                     FD_SET(sd, &allset);
+                    sem_post(&allset_lock);
                     if(sd > max_fd)
                     {
                         max_fd = sd;
@@ -125,7 +139,9 @@ int main(int argc, char** argv)
                 {
                     printf(" Remote Address:  %s:%d closed connection\n", inet_ntoa(clientDetails.sin_addr), ntohs(clientDetails.sin_port));
 					close(sd);
+                    sem_wait(&allset_lock);
                     FD_CLR(sd, &allset);
+                    sem_post(&allset_lock);
                     clients[i] = -1;
 
                 }
@@ -158,6 +174,9 @@ int main(int argc, char** argv)
                        }
                        masterList[i].sd = sd;
                        sem_post(&masterList[i].sem);
+                       sem_wait(&allset_lock);
+                       FD_CLR(sd, &allset);
+                       sem_post(&allset_lock);
 
                    }
                 
@@ -203,6 +222,9 @@ void* serverThread(void* arg)
         }
         printf("received:\n%s\n", buffer);
         write(lock->sd, buffer, messageLength);
+        sem_wait(&allset_lock);
+        FD_SET(lock->sd, &allset);
+        sem_post(&allset_lock);
         lock->sd = -1;
     }
 }
