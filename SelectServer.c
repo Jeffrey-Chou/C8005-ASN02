@@ -177,6 +177,7 @@ int main(int argc, char** argv)
                        sem_wait(&allset_lock);
                        FD_CLR(sd, &allset);
                        sem_post(&allset_lock);
+                       break;
 
                    }
                 
