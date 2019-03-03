@@ -166,7 +166,7 @@ int main(int argc, char** argv)
                     while(1)
                     {
                         n = recv(sd, bp, bytesToRead, 0);
-                        if(n == -1)
+                        if(n <= 0)
                         {
                             if(bytesToRead > 0)
                             {
@@ -188,7 +188,7 @@ int main(int argc, char** argv)
                     while(1)
                     {
                         n = recv(sd, bp, bytesToRead, 0);
-                        if(n == -1)
+                        if(n <= 0)
                         {
                             if(bytesToRead > 0)
                             {
