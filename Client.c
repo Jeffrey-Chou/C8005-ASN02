@@ -134,7 +134,7 @@ void* clientThread(void* threadArg)
         gettimeofday(&end, NULL);
         elapsedTime = (end.tv_sec - start.tv_sec) * 1000;
 	    elapsedTime += (end.tv_usec - start.tv_usec) / 1000;
-	    fprintf(threadFile, "Time elapsed: %f msec\n", elapsedTime);
+	    fprintf(threadFile, "Iteration %d: Time elapsed: %f msec\n", i, elapsedTime);
     }
     close(sd);
     fclose(threadFile);
