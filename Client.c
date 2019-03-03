@@ -11,7 +11,7 @@
 
 #include <sys/time.h>
 
-#define SERVER_PORT 7000
+#define SERVER_PORT 8000
 #define OPTIONS "?s:p:i:l:t:"
 
 void generateMessage();

@@ -14,7 +14,7 @@
 #include <assert.h>
 #include <errno.h>
 
-#define PORT 7000
+#define PORT 8000
 #define TASK_COUNT 5
 #define EPOLL_QUEUE_LEN 256
 #define BUFFER_LENGTH 256
@@ -163,8 +163,20 @@ int main(int argc, char** argv)
 
 
                     bytesToRead = sizeof(messageLength);
-                    while( (n = recv(sd, bp, bytesToRead, 0)) < sizeof(messageLength))
+                    while(1)
                     {
+                        n = recv(sd, bp, bytesToRead, 0);
+                        if(n == -1)
+                        {
+                            if(bytesToRead > 0)
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
                         bp += n;
                         bytesToRead -= n;
                     }
@@ -173,8 +185,20 @@ int main(int argc, char** argv)
                     messageLength = bytesToRead;
                     printf("message length is %u\n", bytesToRead);
                     bp = buffer;
-                    while((n = recv(sd, bp, bytesToRead, 0)) < messageLength)
+                    while(1)
                     {
+                        n = recv(sd, bp, bytesToRead, 0);
+                        if(n == -1)
+                        {
+                            if(bytesToRead > 0)
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                break;
+                            }
+                        }
                         bp += n;
                         bytesToRead -= n;
                     }
