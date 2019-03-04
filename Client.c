@@ -138,6 +138,7 @@ void* clientThread(void* threadArg)
         totalTime += elapsedTime;
     }
     fprintf(threadFile, "Average time per message: %f msec\n", totalTime/iteration);
+    printf("connection done\n");
     close(sd);
     fclose(threadFile);
     return 0;
