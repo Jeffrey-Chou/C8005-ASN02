@@ -15,8 +15,8 @@
 #include <errno.h>
 
 #define PORT 8000
-#define TASK_COUNT 1000
-#define EPOLL_QUEUE_LEN 256
+#define TASK_COUNT 5
+#define EPOLL_QUEUE_LEN 10000
 #define BUFFER_LENGTH 256
 
 typedef struct ThreadLock
@@ -210,20 +210,35 @@ int main(int argc, char** argv)
                     printf("received:\n%s\n", buffer);
                     send(sd, buffer, messageLength, 0);
                     */
-                   for(int i = 0; i < TASK_COUNT; ++i)
-                   {
-                       if(masterList[i].sd != -1)
-                       {
-                           continue;
-                       }
-                       masterList[i].sd = sd;
-                       sem_post(&masterList[i].sem);
-                       //sem_wait(&allset_lock);
+                   int assigned = 0;
+                  
+                        for(int j = 0; j < TASK_COUNT; ++j)
+                        {
+                            if(masterList[j].sd != -1)
+                            {
+                                continue;
+                            }
+                            masterList[j].sd = sd;
+                            sem_post(&masterList[j].sem);
+                            assigned = 1;
+                            //sem_wait(&allset_lock);
 
-                       //sem_post(&allset_lock);
-                       break;
+                            //sem_post(&allset_lock);
+                            break;
+
+                        }
+                        
+                        
+                   if(!assigned)
+                   {
+                       sem_wait(&allset_lock);
+        //FD_SET(lock->sd, &allset);
+                       event.data.fd = sd;
+                       epoll_ctl(epoll_fd, EPOLL_CTL_MOD, sd, &event );
+                       sem_post(&allset_lock);
 
                    }
+                   printf("exited loop\n");
 
             }
 
