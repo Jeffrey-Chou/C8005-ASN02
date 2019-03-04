@@ -102,7 +102,7 @@ void* clientThread(void* threadArg)
     char* buffer = malloc(sizeof(char) * messageLength);
     pthread_t id = pthread_self();
     struct timeval start, end;
-    double elapsedTime = 0;
+    double elapsedTime = 0, totalTime = 0;
 
     if ((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
@@ -135,7 +135,9 @@ void* clientThread(void* threadArg)
         elapsedTime = (end.tv_sec - start.tv_sec) * 1000;
 	    elapsedTime += (end.tv_usec - start.tv_usec) / 1000;
 	    fprintf(threadFile, "Iteration %d: Time elapsed: %f msec\n", i, elapsedTime);
+        totalTime += elapsedTime;
     }
+    fprintf(threadFile, "Average time per message: %f msec\n", totalTime/iteration);
     close(sd);
     fclose(threadFile);
     return 0;
