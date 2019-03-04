@@ -11,7 +11,7 @@
 #include <pthread.h>
 
 
-#define PORT 7000
+#define PORT 8000
 #define TASK_COUNT 5
 #define BUFFER_LENGTH 256
 
@@ -70,7 +70,7 @@ int main(int argc, char** argv)
     }
 
 
-    listen(listen_sd, TASK_COUNT);
+    listen(listen_sd, 100);
     max_fd = listen_sd;
     for(int i = 0; i < FD_SETSIZE; ++i)
     {
@@ -83,10 +83,14 @@ int main(int argc, char** argv)
         sem_wait(&allset_lock);
         rset = allset;
         sem_post(&allset_lock);
+        timeout.tv_sec = 0;
+        timeout.tv_usec = 0;
         nready = select(max_fd + 1, &rset, NULL, NULL, &timeout);
+        
 
         if(nready == 0)
         {
+            //printf("nothing to select\n");
             continue;
         }
 
@@ -166,20 +170,28 @@ int main(int argc, char** argv)
                     printf("received:\n%s\n", buffer);
                     write(sd, buffer, messageLength);
                     */
-                   for(int i = 0; i < TASK_COUNT; ++i)
+                   int assigned = 0;
+                   while(!assigned)
                    {
-                       if(masterList[i].sd != -1)
+                   for(int j = 0; j < TASK_COUNT; ++j)
+                   {
+                       if(masterList[j].sd != -1)
                        {
                            continue;
                        }
-                       masterList[i].sd = sd;
-                       sem_post(&masterList[i].sem);
+                       assigned = 1;
+                       masterList[j].sd = sd;
                        sem_wait(&allset_lock);
                        FD_CLR(sd, &allset);
                        sem_post(&allset_lock);
+                       sem_post(&masterList[j].sem);
+                       
                        break;
 
                    }
+                   //printf("waiting to be assigned\n");
+                   }
+                   //printf("got assigned\n");
                 
                 }
                 if (--nready <= 0)
@@ -203,11 +215,12 @@ void* serverThread(void* arg)
     ssize_t n;
     while(1)
     {
+        printf("before lock\n");
         sem_wait(&lock->sem);
         unsigned messageLength = 0;
         bp = (char *)&messageLength;
         bytesToRead = sizeof(messageLength);
-        while( (n = read(lock->sd, bp, bytesToRead)) > 0)
+        while( (n = recv(lock->sd, bp, bytesToRead, 0)) < bytesToRead)
         {
             bp += n;
             bytesToRead -= n;
@@ -216,13 +229,13 @@ void* serverThread(void* arg)
         messageLength = bytesToRead;
         printf("message length is %u\n", bytesToRead);
         bp = buffer;
-        while((n = read(lock->sd, bp, bytesToRead)) > 0)
+        while((n = recv(lock->sd, bp, bytesToRead,0)) < messageLength)
         {
             bp += n;
             bytesToRead -= n;
         }
         printf("received:\n%s\n", buffer);
-        write(lock->sd, buffer, messageLength);
+        send(lock->sd, buffer, messageLength, 0);
         sem_wait(&allset_lock);
         FD_SET(lock->sd, &allset);
         sem_post(&allset_lock);
