@@ -34,7 +34,7 @@ int main(int argc, char** argv)
     socklen_t clientLen;
     struct sockaddr_in server, clientDetails;
     fd_set rset;
-    char *bp;
+
     struct timeval timeout;
     timeout.tv_sec = 5;
     timeout.tv_usec = 0;
