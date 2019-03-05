@@ -20,6 +20,7 @@ do
     mv $DATAFOLDER $FOLDER
     THREADS=$((THREADS+50))
     echo "Testcase Done"
+    sleep 5
     read -p "Press enter to continue"
 done
 echo "EXITING TEST"

@@ -102,7 +102,7 @@ void generateMessage()
 void* clientThread(void* threadArg)
 {
     FILE* threadFile;
-    char fileName[32];
+    char fileName[64];
     int sd;
     char* buffer = malloc(sizeof(char) * messageLength);
     pthread_t id = pthread_self();
@@ -159,5 +159,6 @@ void* clientThread(void* threadArg)
     fprintf(threadFile, "Average time per message: %f msec\n", totalTime/iteration);
     close(sd);
     fclose(threadFile);
+    free(buffer);
     return 0;
 }
