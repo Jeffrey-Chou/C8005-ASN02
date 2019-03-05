@@ -106,6 +106,7 @@ void* clientThread(void* threadArg)
     int sd;
     char* buffer = malloc(sizeof(char) * (messageLength + 1));
     pthread_t id = pthread_self();
+    char* bp;
     struct timeval start, end;
     double elapsedTime = 0, totalTime = 0;
 
