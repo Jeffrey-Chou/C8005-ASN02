@@ -1,9 +1,10 @@
-SERVER="192.168.43.13"
+SERVER="192.168.0.4"
 LENGTH=16
 ITERATION=100
-THREADS=1
+THREADS=250
 
 make client
+ulimit -n 4096
 FOLDER=$(date | awk ' { print $5} ')
 mkdir $FOLDER
 RET=0
