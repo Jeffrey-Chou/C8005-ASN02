@@ -4,7 +4,7 @@ ITERATION=500
 THREADS=50
 
 make client
-ulimit -n 4096
+ulimit -n 8196
 FOLDER=$(date | awk ' { print $4} ')
 mkdir $FOLDER
 RET=0
@@ -20,6 +20,6 @@ do
     mv $DATAFOLDER $FOLDER
     THREADS=$((THREADS+50))
     echo "Testcase Done"
-    sleep 2
+    read -p "Press enter to continue"
 done
 echo "EXITING TEST"
