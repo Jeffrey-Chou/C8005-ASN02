@@ -13,9 +13,10 @@
 #include <sys/epoll.h>
 #include <assert.h>
 #include <errno.h>
+#include <sched.h>
 
 #define PORT 8000
-#define TASK_COUNT 5
+#define TASK_COUNT 100
 #define EPOLL_QUEUE_LEN 50000
 #define BUFFER_LENGTH 256
 
@@ -169,13 +170,15 @@ int main(int argc, char** argv)
                         break;
 
                     }
-                /*     
-                if(!assigned)
-                {
-                    sem_wait(&allset_lock);
-                    event.data.fd = sd;
-                    epoll_ctl(epoll_fd, EPOLL_CTL_MOD, sd, &event );
-                    sem_post(&allset_lock);*/
+                    
+                    if(!assigned)
+                    {
+                        //sem_wait(&allset_lock);
+                        //event.data.fd = sd;
+                        //epoll_ctl(epoll_fd, EPOLL_CTL_MOD, sd, &event );
+                        //sem_post(&allset_lock);
+                        sched_yield();
+                    }
 
                 }
 
