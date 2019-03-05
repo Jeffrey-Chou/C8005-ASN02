@@ -104,7 +104,7 @@ void* clientThread(void* threadArg)
     FILE* threadFile;
     char fileName[64];
     int sd;
-    char* buffer = malloc(sizeof(char) * messageLength);
+    char* buffer = malloc(sizeof(char) * (messageLength + 1));
     pthread_t id = pthread_self();
     struct timeval start, end;
     double elapsedTime = 0, totalTime = 0;
@@ -126,9 +126,10 @@ void* clientThread(void* threadArg)
     for(unsigned i = 0; i < iteration; ++i)
     {
         int n = 0, bytesLeft = messageLength;
-        char* bp = buffer;
+        
         unsigned length = htonl(messageLength);
-        n = send(sd, &length, sizeof(length), 0);
+        bp = (char*)&length;
+        n = send(sd, bp, sizeof(length), 0);
         if(n == -1)
         {
             close(sd);
@@ -145,6 +146,7 @@ void* clientThread(void* threadArg)
             return 0;
         }
         gettimeofday(&start, NULL);
+        bp = buffer;
         while((n = recv(sd,bp,bytesLeft, 0 )) < messageLength)
         {
             bp += n;
