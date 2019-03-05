@@ -12,7 +12,7 @@
 #include <sys/time.h>
 
 #define SERVER_PORT 8000
-#define OPTIONS "?s:p:i:l:t:"
+#define OPTIONS "?s:i:l:t:"
 
 void generateMessage();
 void* clientThread(void* threadArg);
@@ -27,7 +27,6 @@ int main(int argc, char** argv)
 {
     char* host;
     int opt;
-    unsigned short portNumber;
     unsigned threadCount = 5;
     struct hostent* hp;
     pthread_t* threadList;
@@ -42,10 +41,6 @@ int main(int argc, char** argv)
                 host = optarg;
                 break;
 
-            case 'p':
-                portNumber = atoi(optarg);
-                break;
-
             case 'i':
                 iteration = atoi(optarg);
                 break;
@@ -57,6 +52,9 @@ int main(int argc, char** argv)
             case 't':
                 threadCount = atoi(optarg);
                 break;
+            default:
+                printf("Valid arguments are -s -i - l -t\n");
+                return 1;
         }
     }
     generateMessage();
@@ -82,6 +80,7 @@ int main(int argc, char** argv)
     }
     free(threadList);
     free(message);
+    printf("Client done\n");
     if(error)
     {
         return 1;
@@ -97,7 +96,7 @@ void generateMessage()
         message[i] = (i % 10) + '0';
     }
     message[messageLength - 1] = '\0';
-    printf("%s\n", message);
+    printf("Send Message:%s\n", message);
 }
 
 void* clientThread(void* threadArg)
@@ -132,7 +131,6 @@ void* clientThread(void* threadArg)
         n = send(sd, &length, sizeof(length), 0);
         if(n == -1)
         {
-            printf("error\n");
             close(sd);
             fclose(threadFile);
             error = 1;
@@ -141,7 +139,6 @@ void* clientThread(void* threadArg)
         n = send(sd, message, messageLength, 0);
         if(n == -1)
         {
-            printf("second error\n");
             close(sd);
             fclose(threadFile);
             error = 1;
@@ -160,7 +157,6 @@ void* clientThread(void* threadArg)
         totalTime += elapsedTime;
     }
     fprintf(threadFile, "Average time per message: %f msec\n", totalTime/iteration);
-    printf("connection done\n");
     close(sd);
     fclose(threadFile);
     return 0;
