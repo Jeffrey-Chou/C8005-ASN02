@@ -110,7 +110,7 @@ int main(int argc, char** argv)
                 getpeername(events[i].data.fd, (struct sockaddr*)&clientDetails, &clientLen);
                 close(events[i].data.fd);
                 printf(" Remote Address:  %s:%d closed connection\n", inet_ntoa(clientDetails.sin_addr), ntohs(clientDetails.sin_port));
-                printf("Total Connected: %u\n", count);
+                printf("Total Connected: %u\n", --count);
                 continue;
             }
 
@@ -146,7 +146,7 @@ int main(int argc, char** argv)
                     }
 
                     printf(" Remote Address:   %s:%d\n", inet_ntoa(clientDetails.sin_addr), ntohs(clientDetails.sin_port));
-                    printf("Total Connected: %u\n", count);
+                    printf("Total Connected: %u\n", ++count);
                 }
             }
             else
