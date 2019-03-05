@@ -16,7 +16,7 @@
 
 #define PORT 8000
 #define TASK_COUNT 5
-#define EPOLL_QUEUE_LEN 10
+#define EPOLL_QUEUE_LEN 50000
 #define BUFFER_LENGTH 256
 
 typedef struct ThreadLock
@@ -154,26 +154,28 @@ int main(int argc, char** argv)
                 int sd = events[i].data.fd;
                 int assigned = 0;
                   
-                for(int j = 0; j < TASK_COUNT; ++j)
+                while(!assigned)
                 {
-                    if(masterList[j].sd != -1)
+                    for(int j = 0; j < TASK_COUNT; ++j)
                     {
-                        continue;
+                        if(masterList[j].sd != -1)
+                        {
+                            continue;
+                        }
+                        masterList[j].sd = sd;
+                        sem_post(&masterList[j].sem);
+                        assigned = 1;
+
+                        break;
+
                     }
-                    masterList[j].sd = sd;
-                    sem_post(&masterList[j].sem);
-                    assigned = 1;
-
-                    break;
-
-                }
-                     
+                /*     
                 if(!assigned)
                 {
                     sem_wait(&allset_lock);
                     event.data.fd = sd;
                     epoll_ctl(epoll_fd, EPOLL_CTL_MOD, sd, &event );
-                    sem_post(&allset_lock);
+                    sem_post(&allset_lock);*/
 
                 }
 
