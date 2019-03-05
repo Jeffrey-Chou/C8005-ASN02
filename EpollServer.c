@@ -16,7 +16,7 @@
 
 #define PORT 8000
 #define TASK_COUNT 5
-#define EPOLL_QUEUE_LEN 10000
+#define EPOLL_QUEUE_LEN 10
 #define BUFFER_LENGTH 256
 
 typedef struct ThreadLock
@@ -36,15 +36,11 @@ void* serverThread(void* arg);
 
 int main(int argc, char** argv)
 {
-    int listen_sd, sd, clients[FD_SETSIZE],max_fd, nready, bytesToRead;
+    int listen_sd, sd, nready;
     socklen_t clientLen;
     struct sockaddr_in server, clientDetails;
     static struct epoll_event events[EPOLL_QUEUE_LEN];
-    char *bp;
-    char buffer[BUFFER_LENGTH];
-    struct timeval timeout;
-    timeout.tv_sec = 5;
-    timeout.tv_usec = 0;
+
     sem_init(&allset_lock, 0, 1);
     masterList = malloc(sizeof(ThreadLock) * TASK_COUNT);
 
@@ -84,8 +80,8 @@ int main(int argc, char** argv)
     }
 
 
-    listen(listen_sd, 20);
-    max_fd = listen_sd;
+    listen(listen_sd, EPOLL_QUEUE_LEN);
+
     for(int i = 0; i < FD_SETSIZE; ++i)
     {
         clients[i] = -1;
@@ -159,7 +155,6 @@ int main(int argc, char** argv)
             {
                 printf("dealing with client\n");
                 int sd = events[i].data.fd;
-                ssize_t n;
                 unsigned messageLength = 0;
                 bp = (char *)&messageLength;
 
@@ -282,7 +277,6 @@ void* serverThread(void* arg)
             bp += n;
             bytesToRead -= n;
         }
-        printf("n is %d\n", n);
         bytesToRead = ntohl(messageLength);
         messageLength = bytesToRead;
         printf("message length is %u\n", bytesToRead);
