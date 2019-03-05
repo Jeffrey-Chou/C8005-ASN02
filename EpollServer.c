@@ -82,10 +82,6 @@ int main(int argc, char** argv)
 
     listen(listen_sd, EPOLL_QUEUE_LEN);
 
-    for(int i = 0; i < FD_SETSIZE; ++i)
-    {
-        clients[i] = -1;
-    }
     epoll_fd = epoll_create(EPOLL_QUEUE_LEN);
     if(epoll_fd == -1)
     {
@@ -111,9 +107,9 @@ int main(int argc, char** argv)
         {
             if(events[i].events & (EPOLLHUP | EPOLLERR | EPOLLRDHUP))
             {
+                getpeername(events[i].data.fd, (struct sockaddr*)&client, &clientLen);
                 close(events[i].data.fd);
                 printf(" Remote Address:  %s:%d closed connection\n", inet_ntoa(clientDetails.sin_addr), ntohs(clientDetails.sin_port));
-                //clients[i] = -1;
                 continue;
             }
 
@@ -155,85 +151,30 @@ int main(int argc, char** argv)
             {
                 printf("dealing with client\n");
                 int sd = events[i].data.fd;
-                unsigned messageLength = 0;
-                bp = (char *)&messageLength;
-
-
-
-
-                    /*
-                    bytesToRead = sizeof(messageLength);
-                    while(1)
-                    {
-                        n = recv(sd, bp, bytesToRead, 0);
-                        if(n <= 0)
-                        {
-                            if(bytesToRead > 0)
-                            {
-                                continue;
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                        bp += n;
-                        bytesToRead -= n;
-                    }
-                    printf("n is %d\n", n);
-                    bytesToRead = ntohl(messageLength);
-                    messageLength = bytesToRead;
-                    printf("message length is %u\n", bytesToRead);
-                    bp = buffer;
-                    while(1)
-                    {
-                        n = recv(sd, bp, bytesToRead, 0);
-                        if(n <= 0)
-                        {
-                            if(bytesToRead > 0)
-                            {
-                                continue;
-                            }
-                            else
-                            {
-                                break;
-                            }
-                        }
-                        bp += n;
-                        bytesToRead -= n;
-                    }
-                    printf("received:\n%s\n", buffer);
-                    send(sd, buffer, messageLength, 0);
-                    */
-                   int assigned = 0;
+                int assigned = 0;
                   
-                        for(int j = 0; j < TASK_COUNT; ++j)
-                        {
-                            if(masterList[j].sd != -1)
-                            {
-                                continue;
-                            }
-                            masterList[j].sd = sd;
-                            sem_post(&masterList[j].sem);
-                            assigned = 1;
-                            //sem_wait(&allset_lock);
+                for(int j = 0; j < TASK_COUNT; ++j)
+                {
+                    if(masterList[j].sd != -1)
+                    {
+                        continue;
+                    }
+                    masterList[j].sd = sd;
+                    sem_post(&masterList[j].sem);
+                    assigned = 1;
 
-                            //sem_post(&allset_lock);
-                            break;
+                    break;
 
-                        }
-                        
-                        
-                   if(!assigned)
-                   {
-                       sem_wait(&allset_lock);
-        //FD_SET(lock->sd, &allset);
-                       event.data.fd = sd;
-                       epoll_ctl(epoll_fd, EPOLL_CTL_MOD, sd, &event );
-                       sem_post(&allset_lock);
+                }
+                     
+                if(!assigned)
+                {
+                    sem_wait(&allset_lock);
+                    event.data.fd = sd;
+                    epoll_ctl(epoll_fd, EPOLL_CTL_MOD, sd, &event );
+                    sem_post(&allset_lock);
 
-                   }
-                   printf("exited loop\n");
+                }
 
             }
 
@@ -251,9 +192,7 @@ void* serverThread(void* arg)
     ssize_t n;
     while(1)
     {
-        printf("before lock\n");
         sem_wait(&lock->sem);
-        printf("after lock got %d\n", lock->sd);
         int sd = lock->sd;
         unsigned messageLength = 0;
         bytesToRead = sizeof(messageLength);
@@ -261,12 +200,10 @@ void* serverThread(void* arg)
         while(1)
         {
             n = recv(sd, bp, bytesToRead, 0);
-            //printf("n is %d\n", n);
             if(n <= 0)
             {
                 if(bytesToRead > 0)
                 {
-                    //printf("waiting for %d bytes", bytesToRead);
                     continue;
                 }
                 else
@@ -279,7 +216,6 @@ void* serverThread(void* arg)
         }
         bytesToRead = ntohl(messageLength);
         messageLength = bytesToRead;
-        printf("message length is %u\n", bytesToRead);
         bp = buffer;
         while(1)
         {
@@ -298,10 +234,8 @@ void* serverThread(void* arg)
             bp += n;
             bytesToRead -= n;
         }
-        printf("received:\n%s\n", buffer);
         send(sd, buffer, messageLength, 0);
         sem_wait(&allset_lock);
-        //FD_SET(lock->sd, &allset);
         event.data.fd = sd;
         epoll_ctl(epoll_fd, EPOLL_CTL_MOD, sd, &event );
         sem_post(&allset_lock);
