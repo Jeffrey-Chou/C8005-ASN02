@@ -5,13 +5,12 @@ THREADS=50
 
 make client
 ulimit -n 4096
-FOLDER=$(date | awk ' { print $5} ')
+FOLDER=$(date | awk ' { print $4} ')
 mkdir $FOLDER
 RET=0
 while [ $RET -eq 0 ]
 do
     echo "Testing with $THREADS clients, $LENGTH byte messages, $ITERATION times"
-    exit 0
     DATAFOLDER=THREADS-${THREADS}-ITERATION-${ITERATION}-LENGTH-${LENGTH}
     mkdir $DATAFOLDER
     ./client -s $SERVER -t $THREADS -i $ITERATION -l $LENGTH
