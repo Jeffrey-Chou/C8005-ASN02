@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -ggdb -lpthread
+CFLAGS=-Wall -lpthread
 
 client: Client.c
 	$(CC) $(CFLAGS) Client.c -o client

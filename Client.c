@@ -21,6 +21,7 @@ void* clientThread(void* threadArg);
 struct sockaddr_in server;
 unsigned iteration, messageLength;
 char* message;
+int error;
 
 int main(int argc, char** argv)
 {
@@ -31,6 +32,7 @@ int main(int argc, char** argv)
     struct hostent* hp;
     pthread_t* threadList;
     iteration = 5, messageLength = 16;
+    error = 0;
 
     while((opt = getopt(argc, argv, OPTIONS)) != -1 )
     {
@@ -80,6 +82,10 @@ int main(int argc, char** argv)
     }
     free(threadList);
     free(message);
+    if(error)
+    {
+        return 1;
+    }
     return 0;
 }
 
@@ -123,8 +129,24 @@ void* clientThread(void* threadArg)
         int n = 0, bytesLeft = messageLength;
         char* bp = buffer;
         unsigned length = htonl(messageLength);
-        send(sd, &length, sizeof(length), 0);
-        send(sd, message, messageLength, 0);
+        n = send(sd, &length, sizeof(length), 0);
+        if(n == -1)
+        {
+            printf("error\n");
+            close(sd);
+            fclose(threadFile);
+            error = 1;
+            return 0;
+        }
+        n = send(sd, message, messageLength, 0);
+        if(n == -1)
+        {
+            printf("second error\n");
+            close(sd);
+            fclose(threadFile);
+            error = 1;
+            return 0;
+        }
         gettimeofday(&start, NULL);
         while((n = recv(sd,bp,bytesLeft, 0 )) < messageLength)
         {
