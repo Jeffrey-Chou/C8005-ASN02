@@ -130,7 +130,7 @@ void* clientThread(void* threadArg)
         
         unsigned length = htonl(messageLength);
         bp = (char*)&length;
-        n = send(sd, bp, sizeof(length), MSG_NOSIGNAL);
+        n = send(sd, bp, sizeof(length), 0);
         if(n == -1)
         {
             close(sd);
@@ -138,7 +138,7 @@ void* clientThread(void* threadArg)
             error = 1;
             return 0;
         }
-        n = send(sd, message, messageLength, MSG_NOSIGNAL);
+        n = send(sd, message, messageLength, 0);
         if(n == -1)
         {
             close(sd);
