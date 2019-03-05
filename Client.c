@@ -17,6 +17,12 @@
 void generateMessage();
 void* clientThread(void* threadArg);
 
+typedef struct ClientArgs
+{
+    int sd;
+    FILE* fp;
+} ClientArgs;
+
 
 struct sockaddr_in server;
 unsigned iteration, messageLength;
@@ -32,6 +38,7 @@ int main(int argc, char** argv)
     pthread_t* threadList;
     iteration = 5, messageLength = 16;
     error = 0;
+    
 
     while((opt = getopt(argc, argv, OPTIONS)) != -1 )
     {
@@ -57,6 +64,8 @@ int main(int argc, char** argv)
                 return 1;
         }
     }
+
+    ClientArgs* clients = malloc(sizeof(ClientArgs) * threadCount);
     generateMessage();
     memset(&server, 0, sizeof(struct sockaddr_in));
     server.sin_family = AF_INET;
@@ -130,7 +139,7 @@ void* clientThread(void* threadArg)
         
         unsigned length = htonl(messageLength);
         bp = (char*)&length;
-        n = send(sd, bp, sizeof(length), MSG_NOSIGNAL);
+        n = send(sd, bp, sizeof(length), 0);
         if(n == -1)
         {
             close(sd);
@@ -138,7 +147,7 @@ void* clientThread(void* threadArg)
             error = 1;
             return 0;
         }
-        n = send(sd, message, messageLength, MSG_NOSIGNAL);
+        n = send(sd, message, messageLength, 0);
         if(n == -1)
         {
             close(sd);
