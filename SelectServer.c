@@ -140,7 +140,7 @@ int main(int argc, char** argv)
                 ioctl(sd, FIONREAD, &n);
                 if(n == 0)
                 {
-                    getpeername(sd, (struct sockaddr*)clientDetails, &clientLen);
+                    getpeername(sd, (struct sockaddr*)&clientDetails, &clientLen);
                     printf(" Remote Address:  %s:%d closed connection\n", inet_ntoa(clientDetails.sin_addr), ntohs(clientDetails.sin_port));
 					close(sd);
                     sem_wait(&allset_lock);
