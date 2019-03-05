@@ -12,7 +12,7 @@
 
 
 #define PORT 8000
-#define TASK_COUNT 5
+#define TASK_COUNT 100
 #define BUFFER_LENGTH 256
 
 typedef struct ThreadLock
