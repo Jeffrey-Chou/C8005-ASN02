@@ -135,8 +135,6 @@ int main(int argc, char** argv)
             if(FD_ISSET(sd, &rset))
             {
                 ssize_t n;
-                unsigned messageLength = 0;
-                bp = (char *)&messageLength;
                 ioctl(sd, FIONREAD, &n);
                 if(n == 0)
                 {
