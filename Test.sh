@@ -9,6 +9,8 @@ mkdir $FOLDER
 RET=0
 while [ $RET -eq 0 ]
 do
+    echo "Testing with $THREADS clients, $LENGTH byte messages, $ITERATION times"
+    exit 0
     DATAFOLDER=THREADS-${THREADS}-ITERATION-${ITERATION}-LENGTH-${LENGTH}
     mkdir $DATAFOLDER
     ./client -s $SERVER -t $THREADS -i $ITERATION -l $LENGTH
@@ -16,6 +18,8 @@ do
     echo $RET
     mv *.txt $DATAFOLDER
     mv $DATAFOLDER $FOLDER
-    THREADS=$((THREADS+1))
+    THREADS=$((THREADS+50))
+    echo "Testcase Done"
+    sleep 2
 done
-echo "TEST COMPLETE"
+echo "EXITING TEST"
