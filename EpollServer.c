@@ -107,7 +107,7 @@ int main(int argc, char** argv)
         {
             if(events[i].events & (EPOLLHUP | EPOLLERR | EPOLLRDHUP))
             {
-                getpeername(events[i].data.fd, (struct sockaddr*)&client, &clientLen);
+                getpeername(events[i].data.fd, (struct sockaddr*)&clientDetails, &clientLen);
                 close(events[i].data.fd);
                 printf(" Remote Address:  %s:%d closed connection\n", inet_ntoa(clientDetails.sin_addr), ntohs(clientDetails.sin_port));
                 printf("Total Connected: %u\n", count);
