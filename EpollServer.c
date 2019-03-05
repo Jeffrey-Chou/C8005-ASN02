@@ -40,7 +40,7 @@ int main(int argc, char** argv)
     socklen_t clientLen;
     struct sockaddr_in server, clientDetails;
     static struct epoll_event events[EPOLL_QUEUE_LEN];
-
+    unsigned count = 0;
     sem_init(&allset_lock, 0, 1);
     masterList = malloc(sizeof(ThreadLock) * TASK_COUNT);
 
@@ -110,6 +110,7 @@ int main(int argc, char** argv)
                 getpeername(events[i].data.fd, (struct sockaddr*)&client, &clientLen);
                 close(events[i].data.fd);
                 printf(" Remote Address:  %s:%d closed connection\n", inet_ntoa(clientDetails.sin_addr), ntohs(clientDetails.sin_port));
+                printf("Total Connected: %u\n", count);
                 continue;
             }
 
@@ -120,36 +121,36 @@ int main(int argc, char** argv)
             {
                 while(1)
                 {
-                clientLen = sizeof(struct sockaddr_in);
-                sd = accept(listen_sd, (struct sockaddr *)&clientDetails, &clientLen);
+                    clientLen = sizeof(struct sockaddr_in);
+                    sd = accept(listen_sd, (struct sockaddr *)&clientDetails, &clientLen);
 
-                if(sd == -1)
-                {
-                    if(errno != EAGAIN && errno != EWOULDBLOCK)
+                    if(sd == -1)
                     {
+                        if(errno != EAGAIN && errno != EWOULDBLOCK)
+                        {
 
+                        }
+                        break;
                     }
-                    break;
-                }
-                if(fcntl(sd, F_SETFL, O_NONBLOCK | fcntl(sd, F_GETFL)) == -1)
-                {
-                    fprintf(stderr, "died in fcntl\n");
-                    return 1;
-                }
+                    if(fcntl(sd, F_SETFL, O_NONBLOCK | fcntl(sd, F_GETFL)) == -1)
+                    {
+                        fprintf(stderr, "died in fcntl\n");
+                        return 1;
+                    }
 
-                event.data.fd = sd;
-                if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sd, &event) == -1)
-                {
-                    fprintf(stderr, "died in epollctl\n");
-                    return 1;
-                }
+                    event.data.fd = sd;
+                    if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sd, &event) == -1)
+                    {
+                        fprintf(stderr, "died in epollctl\n");
+                        return 1;
+                    }
 
-                printf(" Remote Address:   %s:%d\n", inet_ntoa(clientDetails.sin_addr), ntohs(clientDetails.sin_port));
+                    printf(" Remote Address:   %s:%d\n", inet_ntoa(clientDetails.sin_addr), ntohs(clientDetails.sin_port));
+                    printf("Total Connected: %u\n", count);
                 }
             }
             else
             {
-                printf("dealing with client\n");
                 int sd = events[i].data.fd;
                 int assigned = 0;
                   
