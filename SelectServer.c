@@ -12,7 +12,7 @@
 
 
 #define PORT 8000
-#define TASK_COUNT 5
+#define TASK_COUNT 100
 #define BUFFER_LENGTH 256
 
 typedef struct ThreadLock
@@ -34,7 +34,7 @@ int main(int argc, char** argv)
     socklen_t clientLen;
     struct sockaddr_in server, clientDetails;
     fd_set rset;
-    char *bp;
+    unsigned count = 0;
     struct timeval timeout;
     timeout.tv_sec = 5;
     timeout.tv_usec = 0;
@@ -70,7 +70,7 @@ int main(int argc, char** argv)
     }
 
 
-    listen(listen_sd, 100);
+    listen(listen_sd, FD_SETSIZE);
     max_fd = listen_sd;
     for(int i = 0; i < FD_SETSIZE; ++i)
     {
@@ -90,7 +90,6 @@ int main(int argc, char** argv)
 
         if(nready == 0)
         {
-            //printf("nothing to select\n");
             continue;
         }
 
@@ -103,6 +102,7 @@ int main(int argc, char** argv)
             }
 
             printf(" Remote Address:   %s:%d\n", inet_ntoa(clientDetails.sin_addr), ntohs(clientDetails.sin_port));
+            printf("Total Connected: %u\n", ++count);
 
             for(int i = 0; i < FD_SETSIZE; ++i)
             {
@@ -136,13 +136,13 @@ int main(int argc, char** argv)
             if(FD_ISSET(sd, &rset))
             {
                 ssize_t n;
-                unsigned messageLength = 0;
-                bp = (char *)&messageLength;
                 ioctl(sd, FIONREAD, &n);
                 if(n == 0)
                 {
+                    getpeername(sd, (struct sockaddr*)&clientDetails, &clientLen);
                     printf(" Remote Address:  %s:%d closed connection\n", inet_ntoa(clientDetails.sin_addr), ntohs(clientDetails.sin_port));
 					close(sd);
+                    printf("Total Connected: %u\n", --count);
                     sem_wait(&allset_lock);
                     FD_CLR(sd, &allset);
                     sem_post(&allset_lock);
@@ -151,48 +151,27 @@ int main(int argc, char** argv)
                 }
                 else
                 {
-                    /*
-                    bytesToRead = sizeof(messageLength);
-                    while( (n = read(sd, bp, bytesToRead)) > 0)
-                    {
-                        bp += n;
-                        bytesToRead -= n;
-                    }
-                    bytesToRead = ntohl(messageLength);
-                    messageLength = bytesToRead;
-                    printf("message length is %u\n", bytesToRead);
-                    bp = buffer;
-                    while((n = read(sd, bp, bytesToRead)) > 0)
-                    {
-                        bp += n;
-                        bytesToRead -= n;
-                    }
-                    printf("received:\n%s\n", buffer);
-                    write(sd, buffer, messageLength);
-                    */
-                   int assigned = 0;
-                   while(!assigned)
-                   {
-                   for(int j = 0; j < TASK_COUNT; ++j)
-                   {
-                       if(masterList[j].sd != -1)
-                       {
-                           continue;
-                       }
-                       assigned = 1;
-                       masterList[j].sd = sd;
-                       sem_wait(&allset_lock);
-                       FD_CLR(sd, &allset);
-                       sem_post(&allset_lock);
-                       sem_post(&masterList[j].sem);
-                       
-                       break;
 
-                   }
-                   //printf("waiting to be assigned\n");
-                   }
-                   //printf("got assigned\n");
-                
+                    int assigned = 0;
+                    while(!assigned)
+                    {
+                        for(int j = 0; j < TASK_COUNT; ++j)
+                        {
+                            if(masterList[j].sd != -1)
+                            {
+                                continue;
+                            }
+                            assigned = 1;
+                            masterList[j].sd = sd;
+                            sem_wait(&allset_lock);
+                            FD_CLR(sd, &allset);
+                            sem_post(&allset_lock);
+                            sem_post(&masterList[j].sem);
+                            break;
+                        }
+
+                    }
+
                 }
                 if (--nready <= 0)
                 {
@@ -215,7 +194,6 @@ void* serverThread(void* arg)
     ssize_t n;
     while(1)
     {
-        printf("before lock\n");
         sem_wait(&lock->sem);
         unsigned messageLength = 0;
         bp = (char *)&messageLength;
@@ -227,14 +205,12 @@ void* serverThread(void* arg)
         }
         bytesToRead = ntohl(messageLength);
         messageLength = bytesToRead;
-        printf("message length is %u\n", bytesToRead);
         bp = buffer;
         while((n = recv(lock->sd, bp, bytesToRead,0)) < messageLength)
         {
             bp += n;
             bytesToRead -= n;
         }
-        printf("received:\n%s\n", buffer);
         send(lock->sd, buffer, messageLength, 0);
         sem_wait(&allset_lock);
         FD_SET(lock->sd, &allset);
