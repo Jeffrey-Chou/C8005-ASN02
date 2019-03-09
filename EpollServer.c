@@ -109,7 +109,9 @@ int main(int argc, char** argv)
             if(events[i].events & (EPOLLHUP | EPOLLERR | EPOLLRDHUP))
             {
                 getpeername(events[i].data.fd, (struct sockaddr*)&clientDetails, &clientLen);
+                sem_wait(&allset_lock);
                 close(events[i].data.fd);
+                sem_post(&allset_lock);
                 printf(" Remote Address:  %s:%d closed connection\n", inet_ntoa(clientDetails.sin_addr), ntohs(clientDetails.sin_port));
                 printf("Total Connected: %u\n", --count);
                 continue;
@@ -138,14 +140,14 @@ int main(int argc, char** argv)
                         fprintf(stderr, "died in fcntl\n");
                         return 1;
                     }
-
+                    sem_wait(&allset_lock);
                     event.data.fd = sd;
                     if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, sd, &event) == -1)
                     {
                         fprintf(stderr, "died in epollctl\n");
                         return 1;
                     }
-
+                    sem_post(&allset_lock);
                     printf(" Remote Address:   %s:%d\n", inet_ntoa(clientDetails.sin_addr), ntohs(clientDetails.sin_port));
                     printf("Total Connected: %u\n", ++count);
                 }
