@@ -1,7 +1,7 @@
 SERVER="192.168.0.4"
 LENGTH=16
 ITERATION=500
-THREADS=2000
+THREADS=50
 
 make client
 ulimit -n 8196
@@ -15,12 +15,11 @@ do
     mkdir $DATAFOLDER
     ./client -s $SERVER -t $THREADS -i $ITERATION -l $LENGTH
     RET=$?
-    echo $RET
+    #echo $RET
     mv *.txt $DATAFOLDER
     mv $DATAFOLDER $FOLDER
     THREADS=$((THREADS+50))
     echo "Testcase Done"
-    ret=1
     #sleep 5
     #read -p "Press enter to continue"
 done
