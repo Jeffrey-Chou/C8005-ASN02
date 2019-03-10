@@ -71,7 +71,7 @@ int main(int argc, char** argv)
     }
     memcpy(&server.sin_addr, hp->h_addr, hp->h_length);
 
-    threadList = malloc(sizeof(pthread_t) * clientCount );
+    //threadList = malloc(sizeof(pthread_t) * clientCount );
     processList = malloc(sizeof(pid_t) * clientCount);
     for(int i = 0; i < clientCount; ++i)
     {
