@@ -10,12 +10,14 @@
 #include <pthread.h>
 
 #include <sys/time.h>
+#include <sys/wait.h>
 
 #define SERVER_PORT 8000
+#define TASK_COUNT 100
 #define OPTIONS "?s:i:l:t:"
 
 void generateMessage();
-void* clientThread(void* threadArg);
+int clientThread(int id);
 
 
 struct sockaddr_in server;
@@ -26,10 +28,11 @@ int error;
 int main(int argc, char** argv)
 {
     char* host;
-    int opt;
-    unsigned threadCount = 5;
+    int opt, ret = 0, status;
+    unsigned clientCount = 5;
     struct hostent* hp;
     pthread_t* threadList;
+    pid_t* processList, pid;
     iteration = 5, messageLength = 16;
     error = 0;
 
@@ -50,7 +53,7 @@ int main(int argc, char** argv)
                 break;
 
             case 't':
-                threadCount = atoi(optarg);
+                clientCount = atoi(optarg);
                 break;
             default:
                 printf("Valid arguments are -s -i - l -t\n");
@@ -68,17 +71,37 @@ int main(int argc, char** argv)
     }
     memcpy(&server.sin_addr, hp->h_addr, hp->h_length);
 
-    threadList = malloc(sizeof(pthread_t) * threadCount );
-    for(int i = 0; i < threadCount; ++i)
+    threadList = malloc(sizeof(pthread_t) * clientCount );
+    processList = malloc(sizeof(pid_t) * clientCount);
+    for(int i = 0; i < clientCount; ++i)
     {
-        pthread_create(&threadList[i], NULL, clientThread, NULL);
+        //pthread_create(&threadList[i], NULL, clientThread, NULL);
+        pid = fork();
+        if(pid < 0)
+        {
+            return 1;
+        }
+        if(pid == 0)
+        {
+            ret = clientThread(i);
+            return ret;
+        }
+        processList[i] = pid;
+        
     }
 
-    for(int i = 0; i < threadCount; ++i)
+    for(int i = 0; i < clientCount; ++i)
     {
-        pthread_join(threadList[i], NULL);
+        //pthread_join(threadList[i], NULL);
+        waitpid(processList[i], &status, 0);
+        if(status > 0)
+        {
+            error = 1;
+        }
+        
     }
-    free(threadList);
+    //free(threadList);
+    free(processList);
     free(message);
     printf("Client done\n");
     if(error)
@@ -99,13 +122,13 @@ void generateMessage()
     printf("Send Message:%s\n", message);
 }
 
-void* clientThread(void* threadArg)
+int clientThread(int id)
 {
     FILE* threadFile;
     char fileName[64];
     int sd;
     char* buffer = malloc(sizeof(char) * (messageLength + 1));
-    pthread_t id = pthread_self();
+    //pthread_t id = pthread_self();
     char* bp;
     struct timeval start, end;
     double elapsedTime = 0, totalTime = 0;
@@ -120,7 +143,7 @@ void* clientThread(void* threadArg)
         return 0;
     }
 
-    sprintf(fileName, "Thread%lu.txt", (unsigned long)id);
+    sprintf(fileName, "Client-%d.txt", id);
     threadFile = fopen(fileName, "w");
     fprintf(threadFile,"Sending message length %u to the server %u times\n\n", messageLength, iteration);
     
@@ -130,7 +153,7 @@ void* clientThread(void* threadArg)
         
         unsigned length = htonl(messageLength);
         bp = (char*)&length;
-        n = send(sd, bp, sizeof(length), MSG_NOSIGNAL);
+        n = send(sd, bp, sizeof(length), 0);
         if(n == -1)
         {
             close(sd);
@@ -138,7 +161,7 @@ void* clientThread(void* threadArg)
             error = 1;
             return 0;
         }
-        n = send(sd, message, messageLength, MSG_NOSIGNAL);
+        n = send(sd, message, messageLength, 0);
         if(n == -1)
         {
             close(sd);
