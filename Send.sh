@@ -1,6 +1,2 @@
-FOLDER=STRESS
+./client -s 192.168.0.4 -t 300 -i 500 
 
-for i in 1 2 3 4 5
-do
-    ./${FOLDER}$i/client -s 192.168.0.4 -t 300 -i 500 &
-done

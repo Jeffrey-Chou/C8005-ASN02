@@ -6,5 +6,6 @@ do
     FOLDER=${FOLDER_NAME}$i
     mkdir $FOLDER
     cp client $FOLDER
+    cp Send.sh $FOLDER
 done
 
