@@ -135,12 +135,12 @@ int clientThread(int id)
 
     if ((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
     {
-        return 0;
+        return 1;
     }
 
     if ( connect(sd, (struct sockaddr*)&server, sizeof(struct sockaddr_in)) == -1)
     {
-        return 0;
+        return 1;
     }
 
     sprintf(fileName, "Client-%d.txt", id);
@@ -159,7 +159,7 @@ int clientThread(int id)
             close(sd);
             fclose(threadFile);
             error = 1;
-            return 0;
+            return 1;
         }
         n = send(sd, message, messageLength, 0);
         if(n == -1)
@@ -167,7 +167,7 @@ int clientThread(int id)
             close(sd);
             fclose(threadFile);
             error = 1;
-            return 0;
+            return 1;
         }
         gettimeofday(&start, NULL);
         bp = buffer;
@@ -180,6 +180,12 @@ int clientThread(int id)
         elapsedTime = (end.tv_sec - start.tv_sec) * 1000;
 	    elapsedTime += (end.tv_usec - start.tv_usec) / 1000;
 	    fprintf(threadFile, "Iteration %d: Time elapsed: %f msec\n", i, elapsedTime);
+        if(n == -1)
+        {
+            close(sd);
+            fclose(threadFile);
+            return 1;
+        }
         totalTime += elapsedTime;
     }
     fprintf(threadFile, "Average time per message: %f msec\n", totalTime/iteration);
