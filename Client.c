@@ -31,7 +31,7 @@ int main(int argc, char** argv)
     int opt, ret = 0, status;
     unsigned clientCount = 5;
     struct hostent* hp;
-    pthread_t* threadList;
+    //pthread_t* threadList;
     pid_t* processList, pid;
     iteration = 5, messageLength = 16;
     error = 0;
